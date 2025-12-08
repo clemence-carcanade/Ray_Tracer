@@ -24,6 +24,9 @@ def normalize(v):
     l = length(v)
     return tuple(x / l for x in v)
 
+def negate(v):
+    return tuple(-x for x in v)
+
 # Implementation of pseudo-code
 def CanvasToViewport(x, y):
     return (
@@ -50,7 +53,7 @@ def IntersectRaySphere(O, D, sphere):
 
     return t1, t2
 
-def ComputeLighting(P, N, scene):
+def ComputeLighting(P, N, V, s, scene):
     intensity = 0.0
 
     for light in scene.lights:
@@ -65,6 +68,12 @@ def ComputeLighting(P, N, scene):
             n_dot_l = dot(N, L)
             if n_dot_l > 0:
                 intensity += light.intensity * n_dot_l / (length(N) * length(L))
+
+            if s != -1:
+                R = subtract(multiply(N, 2 * dot(N, L)), L)
+                r_dot_v = dot(R, V)
+                if r_dot_v > 0:
+                    intensity += light.intensity * pow(r_dot_v / (length(R) * length(V)), s)
 
     return intensity
 
@@ -88,7 +97,7 @@ def TraceRay(O, D, t_min, t_max, scene):
 
     P = add(O, multiply(D, closest_t))
     N = normalize(subtract(P, closest_sphere.center))
-    lighting = ComputeLighting(P, N, scene)
+    lighting = ComputeLighting(P, N, negate(D), closest_sphere.specular, scene)
     r = int(closest_sphere.color[0] * lighting)
     g = int(closest_sphere.color[1] * lighting)
     b = int(closest_sphere.color[2] * lighting)
@@ -110,9 +119,8 @@ def main():
             py = CANVAS_HEIGHT // 2 - y - 1
             pixels[px, py] = color
 
-    image.save("output2.png")
-    print("Completed Rendering : output2.png")
-
+    image.save("output3.png")
+    print("Completed Rendering : output3.png")
 
 if __name__ == "__main__":
     main()
