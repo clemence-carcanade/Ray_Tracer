@@ -8,8 +8,21 @@ from config import *
 def dot(a, b):
     return sum(x * y for x, y in zip(a, b))
 
+def add(a, b):
+    return tuple(x + y for x, y in zip(a, b))
+
 def subtract(a, b):
     return tuple(x - y for x, y in zip(a, b))
+
+def multiply(v, k):
+    return tuple(x * k for x in v)
+
+def length(v):
+    return math.sqrt(dot(v, v))
+
+def normalize(v):
+    l = length(v)
+    return tuple(x / l for x in v)
 
 # Implementation of pseudo-code
 def CanvasToViewport(x, y):
@@ -37,6 +50,24 @@ def IntersectRaySphere(O, D, sphere):
 
     return t1, t2
 
+def ComputeLighting(P, N, scene):
+    intensity = 0.0
+
+    for light in scene.lights:
+        if light.type == "ambient":
+            intensity += light.intensity
+        else:
+            if light.type == "point":
+                L = subtract(light.position, P)
+            else:
+                L = light.direction
+
+            n_dot_l = dot(N, L)
+            if n_dot_l > 0:
+                intensity += light.intensity * n_dot_l / (length(N) * length(L))
+
+    return intensity
+
 def TraceRay(O, D, t_min, t_max, scene):
     closest_t = math.inf
     closest_sphere = None
@@ -55,7 +86,13 @@ def TraceRay(O, D, t_min, t_max, scene):
     if closest_sphere is None:
         return BACKGROUND_COLOR
 
-    return closest_sphere.color
+    P = add(O, multiply(D, closest_t))
+    N = normalize(subtract(P, closest_sphere.center))
+    lighting = ComputeLighting(P, N, scene)
+    r = int(closest_sphere.color[0] * lighting)
+    g = int(closest_sphere.color[1] * lighting)
+    b = int(closest_sphere.color[2] * lighting)
+    return (r, g, b)
 
 def main():
     print("Start Ray Tracing...")
@@ -73,8 +110,8 @@ def main():
             py = CANVAS_HEIGHT // 2 - y - 1
             pixels[px, py] = color
 
-    image.save("output.png")
-    print("Completed Rendering : output.png")
+    image.save("output2.png")
+    print("Completed Rendering : output2.png")
 
 
 if __name__ == "__main__":
