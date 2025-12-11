@@ -53,7 +53,7 @@ def IntersectRaySphere(O, D, sphere):
 
     return t1, t2
 
-def ComputeLighting(P, N, V, s, scene):
+def ComputeLighting(P, N, V, s, t_max, scene):
     intensity = 0.0
 
     for light in scene.lights:
@@ -64,6 +64,10 @@ def ComputeLighting(P, N, V, s, scene):
                 L = subtract(light.position, P)
             else:
                 L = light.direction
+
+            shadow_sphere, shadow_t = ClosestIntersection(P, L, 0.001, t_max, scene)
+            if shadow_sphere != None:
+                continue
 
             n_dot_l = dot(N, L)
             if n_dot_l > 0:
@@ -78,30 +82,38 @@ def ComputeLighting(P, N, V, s, scene):
     return intensity
 
 def TraceRay(O, D, t_min, t_max, scene):
+    sphere, t = ClosestIntersection(O, D, t_min, t_max, scene)
+    if sphere is None:
+        return BACKGROUND_COLOR
+
+    P = add(O, multiply(D, t))
+    N = normalize(subtract(P, sphere.center))
+    lighting = ComputeLighting(P, N, negate(D), sphere.specular, t_max, scene)
+
+    r = int(sphere.color[0] * lighting)
+    g = int(sphere.color[1] * lighting)
+    b = int(sphere.color[2] * lighting)
+
+    return (r, g, b)
+
+
+def ClosestIntersection(O, D, t_min, t_max, scene):
     closest_t = math.inf
     closest_sphere = None
 
     for sphere in scene.spheres:
         t1, t2 = IntersectRaySphere(O, D, sphere)
 
-        if t_min <= t1 <= t_max and t1 < closest_t:
+        if t_min < t1 < t_max and t1 < closest_t:
             closest_t = t1
             closest_sphere = sphere
 
-        if t_min <= t2 <= t_max and t2 < closest_t:
+        if t_min < t2 < t_max and t2 < closest_t:
             closest_t = t2
             closest_sphere = sphere
 
-    if closest_sphere is None:
-        return BACKGROUND_COLOR
+    return closest_sphere, closest_t
 
-    P = add(O, multiply(D, closest_t))
-    N = normalize(subtract(P, closest_sphere.center))
-    lighting = ComputeLighting(P, N, negate(D), closest_sphere.specular, scene)
-    r = int(closest_sphere.color[0] * lighting)
-    g = int(closest_sphere.color[1] * lighting)
-    b = int(closest_sphere.color[2] * lighting)
-    return (r, g, b)
 
 def main():
     print("Start Ray Tracing...")
@@ -119,8 +131,8 @@ def main():
             py = CANVAS_HEIGHT // 2 - y - 1
             pixels[px, py] = color
 
-    image.save("output3.png")
-    print("Completed Rendering : output3.png")
+    image.save("output4.png")
+    print("Completed Rendering : output4.png")
 
 if __name__ == "__main__":
     main()
