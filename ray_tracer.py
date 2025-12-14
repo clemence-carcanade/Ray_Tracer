@@ -81,20 +81,39 @@ def ComputeLighting(P, N, V, s, t_max, scene):
 
     return intensity
 
-def TraceRay(O, D, t_min, t_max, scene):
+def TraceRay(O, D, t_min, t_max, depth, scene):
     sphere, t = ClosestIntersection(O, D, t_min, t_max, scene)
     if sphere is None:
         return BACKGROUND_COLOR
 
     P = add(O, multiply(D, t))
     N = normalize(subtract(P, sphere.center))
-    lighting = ComputeLighting(P, N, negate(D), sphere.specular, t_max, scene)
+    V = negate(D)
 
-    r = int(sphere.color[0] * lighting)
-    g = int(sphere.color[1] * lighting)
-    b = int(sphere.color[2] * lighting)
+    lighting = ComputeLighting(P, N, V, sphere.specular, t_max, scene)
 
-    return (r, g, b)
+    local_color = (
+        int(sphere.color[0] * lighting),
+        int(sphere.color[1] * lighting),
+        int(sphere.color[2] * lighting)
+    )
+
+    r = sphere.reflective
+
+    if depth <= 0 or r <= 0:
+        return local_color
+
+    R = ReflectRay(V, N)
+    reflected_color = TraceRay(P, R, 0.001, math.inf, depth - 1, scene)
+
+    final_color = (
+        int(local_color[0] * (1 - r) + reflected_color[0] * r),
+        int(local_color[1] * (1 - r) + reflected_color[1] * r),
+        int(local_color[2] * (1 - r) + reflected_color[2] * r)
+    )
+
+    return final_color
+
 
 
 def ClosestIntersection(O, D, t_min, t_max, scene):
@@ -114,6 +133,10 @@ def ClosestIntersection(O, D, t_min, t_max, scene):
 
     return closest_sphere, closest_t
 
+def ReflectRay(V, N):
+    return subtract(
+        multiply(N, 2 * dot(N, V)), V
+    )
 
 def main():
     print("Start Ray Tracing...")
@@ -122,17 +145,18 @@ def main():
 
     scene = Scene()
     O = (0, 0, 0)
+    recursion_depth = 3
 
     for x in range(-CANVAS_WIDTH // 2, CANVAS_WIDTH // 2):
         for y in range(-CANVAS_HEIGHT // 2, CANVAS_HEIGHT // 2):
             D = CanvasToViewport(x, y)
-            color = TraceRay(O, D, 1, math.inf, scene)
+            color = TraceRay(O, D, 1, math.inf, recursion_depth, scene)
             px = x + CANVAS_WIDTH // 2
             py = CANVAS_HEIGHT // 2 - y - 1
             pixels[px, py] = color
 
-    image.save("output4.png")
-    print("Completed Rendering : output4.png")
+    image.save("output5.png")
+    print("Completed Rendering : output5.png")
 
 if __name__ == "__main__":
     main()
