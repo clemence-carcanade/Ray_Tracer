@@ -1,4 +1,6 @@
-# User Guide
+# Python Ray Tracer
+
+## User Guide
 
 Before running the script, you need to create a virtual environment.
 
@@ -15,3 +17,8 @@ Once the virtual environment is created, run the ray tracer from the project roo
 ```bash
 python ray_tracer.py
 ```
+
+## About
+
+This project is a Python implementation of a ray tracer based on the book *Computer Graphics from Scratch* by Gabriel Gambetta.  
+More details can be found here: https://gabrielgambetta.com/computer-graphics-from-scratch/
