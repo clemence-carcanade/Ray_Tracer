@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple
+import math
 
 @dataclass
 class Sphere:
@@ -16,6 +17,15 @@ class Light:
     position: Optional[Tuple[float, float, float]] = None
     direction: Optional[Tuple[float, float, float]] = None
 
+@dataclass
+class Camera:
+    position: Tuple[float, float, float]
+    rotation: Tuple[
+        Tuple[float, float, float],
+        Tuple[float, float, float],
+        Tuple[float, float, float],
+    ]
+
 class Scene:
     def __init__(self):
         self.spheres = [
@@ -29,3 +39,20 @@ class Scene:
             Light(type="point", intensity=0.6, position=(2,1,0)),
             Light(type="directional", intensity=0.2, direction=(1,4,4))
         ]
+        self.camera = Camera(
+                        position=(-3.5, 3.5, -3),
+                        rotation=(
+                            (math.cos(0.4), -0.5*math.cos(0.5+0.4)+0.5*math.cos(0.5-0.4), 0.5*math.sin(0.5+0.4)-0.5*math.sin(0.5-0.4)),
+                            (0, math.cos(0.5), -math.sin(0.5)),
+                            (-math.sin(0.4), 0.5*math.sin(0.5+0.4)+0.5*math.sin(0.5-0.4),  0.5*math.cos(0.5+0.4)+0.5*math.cos(0.5-0.4)),
+                        ))
+
+"""
+Camera(
+    position=(4, 0, 1.5),
+    rotation=(
+    (math.cos(-45),  0,  math.sin(-45)),
+    (0,             1,  0),
+    (-math.sin(-45), 0,  math.cos(-45)),
+    ))
+"""

@@ -27,6 +27,9 @@ def normalize(v):
 def negate(v):
     return tuple(-x for x in v)
 
+def multiply_matrix_vector(M, v):
+    return (dot(M[0], v), dot(M[1], v), dot(M[2], v))
+
 # Implementation of pseudo-code
 def CanvasToViewport(x, y):
     return (
@@ -144,19 +147,19 @@ def main():
     pixels = image.load()
 
     scene = Scene()
-    O = (0, 0, 0)
+    O = scene.camera.position
     recursion_depth = 3
 
     for x in range(-CANVAS_WIDTH // 2, CANVAS_WIDTH // 2):
         for y in range(-CANVAS_HEIGHT // 2, CANVAS_HEIGHT // 2):
-            D = CanvasToViewport(x, y)
+            D = multiply_matrix_vector(scene.camera.rotation, CanvasToViewport(x, y))
             color = TraceRay(O, D, 1, math.inf, recursion_depth, scene)
             px = x + CANVAS_WIDTH // 2
             py = CANVAS_HEIGHT // 2 - y - 1
             pixels[px, py] = color
 
-    image.save("output5.png")
-    print("Completed Rendering : output5.png")
+    image.save("output6.3.png")
+    print("Completed Rendering : output6.3.png")
 
 if __name__ == "__main__":
     main()
