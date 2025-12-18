@@ -158,8 +158,8 @@ def main():
             py = CANVAS_HEIGHT // 2 - y - 1
             pixels[px, py] = color
 
-    image.save("output6.3.png")
-    print("Completed Rendering : output6.3.png")
+    image.save("output/output.png")
+    print("Completed Rendering : output.png")
 
 if __name__ == "__main__":
     main()
