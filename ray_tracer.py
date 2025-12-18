@@ -1,7 +1,7 @@
 import math
 from PIL import Image
 
-from scene import Scene
+from scene import Scene, Sphere, Wall
 from config import *
 
 # Vector math operations
@@ -30,6 +30,13 @@ def negate(v):
 def multiply_matrix_vector(M, v):
     return (dot(M[0], v), dot(M[1], v), dot(M[2], v))
 
+def cross(a, b):
+    return (
+        a[1]*b[2] - a[2]*b[1],
+        a[2]*b[0] - a[0]*b[2],
+        a[0]*b[1] - a[1]*b[0]
+    )
+
 # Implementation of pseudo-code
 def CanvasToViewport(x, y):
     return (
@@ -56,6 +63,32 @@ def IntersectRaySphere(O, D, sphere):
 
     return t1, t2
 
+def IntersectRayWall(O, D, wall):
+    norm = dot(wall.normal, D)
+    epsilon = 1e-6
+    if abs(norm) < epsilon:
+        return math.inf
+    t = dot(subtract(wall.center, O), wall.normal) / norm
+    if t < 0: return math.inf
+    P = add(O, multiply(D, t))
+    
+    if abs(wall.normal[0]) < epsilon and abs(wall.normal[1]) < epsilon:
+        tangent = (0, 1, 0)
+    else:
+        tangent = (0, 0, 1)
+    
+    axis1 = normalize(cross(wall.normal, tangent))
+    axis2 = cross(axis1, wall.normal)
+    
+    diff = subtract(P, wall.center)
+    u = dot(diff, axis1)
+    v = dot(diff, axis2)
+    
+    if abs(u) > wall.width/2 or abs(v) > wall.height/2:
+        return math.inf
+    
+    return t
+
 def ComputeLighting(P, N, V, s, t_max, scene):
     intensity = 0.0
 
@@ -68,8 +101,8 @@ def ComputeLighting(P, N, V, s, t_max, scene):
             else:
                 L = light.direction
 
-            shadow_sphere, shadow_t = ClosestIntersection(P, L, 0.001, t_max, scene)
-            if shadow_sphere != None:
+            shadow_object, shadow_t = ClosestIntersection(P, L, 0.001, t_max, scene)
+            if shadow_object != None:
                 continue
 
             n_dot_l = dot(N, L)
@@ -85,23 +118,29 @@ def ComputeLighting(P, N, V, s, t_max, scene):
     return intensity
 
 def TraceRay(O, D, t_min, t_max, depth, scene):
-    sphere, t = ClosestIntersection(O, D, t_min, t_max, scene)
-    if sphere is None:
+    object, t = ClosestIntersection(O, D, t_min, t_max, scene)
+    if object is None:
         return BACKGROUND_COLOR
 
     P = add(O, multiply(D, t))
-    N = normalize(subtract(P, sphere.center))
+    if isinstance(object, Sphere):
+        N = normalize(subtract(P, object.center))
+    elif isinstance(object, Wall):
+        N = object.normal
+    else:
+        raise ValueError("Unkown Object")
+    
     V = negate(D)
 
-    lighting = ComputeLighting(P, N, V, sphere.specular, t_max, scene)
+    lighting = ComputeLighting(P, N, V, object.specular, t_max, scene)
 
     local_color = (
-        int(sphere.color[0] * lighting),
-        int(sphere.color[1] * lighting),
-        int(sphere.color[2] * lighting)
+        int(object.color[0] * lighting),
+        int(object.color[1] * lighting),
+        int(object.color[2] * lighting)
     )
 
-    r = sphere.reflective
+    r = object.reflective
 
     if depth <= 0 or r <= 0:
         return local_color
@@ -117,24 +156,28 @@ def TraceRay(O, D, t_min, t_max, depth, scene):
 
     return final_color
 
-
-
 def ClosestIntersection(O, D, t_min, t_max, scene):
     closest_t = math.inf
-    closest_sphere = None
+    closest_object = None
 
     for sphere in scene.spheres:
         t1, t2 = IntersectRaySphere(O, D, sphere)
 
         if t_min < t1 < t_max and t1 < closest_t:
             closest_t = t1
-            closest_sphere = sphere
+            closest_object = sphere
 
         if t_min < t2 < t_max and t2 < closest_t:
             closest_t = t2
-            closest_sphere = sphere
+            closest_object = sphere
+    
+    for wall in scene.walls:
+        t = IntersectRayWall(O, D, wall)
+        if t_min < t < t_max and t < closest_t:
+            closest_t = t
+            closest_object = wall
 
-    return closest_sphere, closest_t
+    return closest_object, closest_t
 
 def ReflectRay(V, N):
     return subtract(
