@@ -9,3 +9,6 @@ PROJECTION_PLANE_D = 1
 
 # Colors
 BACKGROUND_COLOR = (0, 0, 0)
+
+# Walls and Triangles small value
+EPSILON = 1e-6

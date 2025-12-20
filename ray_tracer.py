@@ -1,7 +1,7 @@
 import math
 from PIL import Image
 
-from scene import Scene, Sphere, Wall
+from scene import Scene, Sphere, Wall, Triangle
 from config import *
 
 # Vector math operations
@@ -65,14 +65,13 @@ def IntersectRaySphere(O, D, sphere):
 
 def IntersectRayWall(O, D, wall):
     norm = dot(wall.normal, D)
-    epsilon = 1e-6
-    if abs(norm) < epsilon:
+    if abs(norm) < EPSILON:
         return math.inf
     t = dot(subtract(wall.center, O), wall.normal) / norm
     if t < 0: return math.inf
     P = add(O, multiply(D, t))
     
-    if abs(wall.normal[0]) < epsilon and abs(wall.normal[1]) < epsilon:
+    if abs(wall.normal[0]) < EPSILON and abs(wall.normal[1]) < EPSILON:
         tangent = (0, 1, 0)
     else:
         tangent = (0, 0, 1)
@@ -88,6 +87,30 @@ def IntersectRayWall(O, D, wall):
         return math.inf
     
     return t
+
+def IntersectRayTriangle(O, D, tri):
+    edge1 = subtract(tri.vertex1, tri.vertex0)
+    edge2 = subtract(tri.vertex2, tri.vertex0)
+
+    h = cross(D, edge2)
+    a = dot(edge1, h)
+
+    if abs(a) < EPSILON:
+        return math.inf
+
+    f = 1.0 / a
+    s = subtract(O, tri.vertex0)
+    u = f * dot(s, h)
+    if u < 0.0 or u > 1.0:
+        return math.inf
+
+    q = cross(s, edge1)
+    v = f * dot(D, q)
+    if v < 0.0 or u + v > 1.0:
+        return math.inf
+
+    t = f * dot(edge2, q)
+    return t if t > EPSILON else math.inf
 
 def ComputeLighting(P, N, V, s, t_max, scene):
     intensity = 0.0
@@ -123,14 +146,16 @@ def TraceRay(O, D, t_min, t_max, depth, scene):
         return BACKGROUND_COLOR
 
     P = add(O, multiply(D, t))
+    V = negate(D)
     if isinstance(object, Sphere):
         N = normalize(subtract(P, object.center))
     elif isinstance(object, Wall):
         N = object.normal
+    elif isinstance(object, Triangle):
+        N = normalize(cross(subtract(object.vertex1, object.vertex0),subtract(object.vertex2, object.vertex0)))
+        if dot(N, V) < 0 : N = negate(N)
     else:
         raise ValueError("Unkown Object")
-    
-    V = negate(D)
 
     lighting = ComputeLighting(P, N, V, object.specular, t_max, scene)
 
@@ -176,6 +201,12 @@ def ClosestIntersection(O, D, t_min, t_max, scene):
         if t_min < t < t_max and t < closest_t:
             closest_t = t
             closest_object = wall
+
+    for triangle in scene.triangles:
+        t = IntersectRayTriangle(O, D, triangle)
+        if t_min < t < t_max and t < closest_t:
+            closest_t = t
+            closest_object = triangle
 
     return closest_object, closest_t
 
