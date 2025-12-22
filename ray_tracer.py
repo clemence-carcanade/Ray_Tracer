@@ -1,4 +1,4 @@
-import math
+import math, time
 from PIL import Image
 
 from scene import Scene, Sphere, Wall, Triangle
@@ -217,6 +217,7 @@ def ReflectRay(V, N):
 
 def main():
     print("Start Ray Tracing...")
+    start_time = time.time()
     image = Image.new("RGB", (CANVAS_WIDTH, CANVAS_HEIGHT))
     pixels = image.load()
 
@@ -234,6 +235,10 @@ def main():
 
     image.save("output/output.png")
     print("Completed Rendering : output.png")
+    end_time = int(time.time()-start_time)
+    minutes = end_time//60
+    seconds = end_time%60
+    print(f"Render time: {minutes:02d}:{seconds:02d}")
 
 if __name__ == "__main__":
     main()
