@@ -203,11 +203,10 @@ def ClosestIntersection(O, D, t_min, t_max, scene):
             closest_t = t
             closest_object = wall
 
-    for triangle in scene.triangles:
-        t = IntersectRayTriangle(O, D, triangle)
-        if t_min < t < t_max and t < closest_t:
-            closest_t = t
-            closest_object = triangle
+    triangle, t = intersect_bvh(scene.bvh, O, D, t_min, t_max)
+    if triangle and t < closest_t:
+        closest_t = t
+        closest_object = triangle
 
     return closest_object, closest_t
 
@@ -215,6 +214,49 @@ def ReflectRay(V, N):
     return subtract(
         multiply(N, 2 * dot(N, V)), V
     )
+
+def intersect_aabb(O, D, bounds_min, bounds_max):
+    tmin = -math.inf
+    tmax = math.inf
+
+    for i in range(3):
+        if abs(D[i]) < EPSILON:
+            if O[i] < bounds_min[i] or O[i] > bounds_max[i]:
+                return False
+        else:
+            invD = 1.0 / D[i]
+            t0 = (bounds_min[i] - O[i]) * invD
+            t1 = (bounds_max[i] - O[i]) * invD
+            if t0 > t1:
+                t0, t1 = t1, t0
+            tmin = max(tmin, t0)
+            tmax = min(tmax, t1)
+            if tmax < tmin:
+                return False
+
+    return True
+
+def intersect_bvh(node, O, D, t_min, t_max):
+    if not intersect_aabb(O, D, node.bounds_min, node.bounds_max):
+        return None, math.inf
+
+    closest_obj = None
+    closest_t = t_max
+
+    if node.triangles is not None:
+        for tri in node.triangles:
+            t = IntersectRayTriangle(O, D, tri)
+            if t_min < t < closest_t:
+                closest_t = t
+                closest_obj = tri
+        return closest_obj, closest_t
+
+    obj_l, t_l = intersect_bvh(node.left, O, D, t_min, closest_t)
+    obj_r, t_r = intersect_bvh(node.right, O, D, t_min, closest_t)
+
+    if t_l < t_r:
+        return obj_l, t_l
+    return obj_r, t_r
 
 def RenderRow(y):
     scene = Scene()

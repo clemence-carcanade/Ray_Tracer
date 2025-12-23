@@ -46,6 +46,47 @@ class Camera:
         Tuple[float, float, float],
     ]
 
+@dataclass
+class BVHNode:
+    def __init__(self, triangles):
+        self.triangles = triangles
+        self.left = None
+        self.right = None
+
+        mins = [math.inf]*3
+        maxs = [-math.inf]*3
+        for triangle in triangles:
+            for v in (triangle.vertex0, triangle.vertex1, triangle.vertex2):
+                for i in range(3):
+                    mins[i] = min(mins[i], v[i])
+                    maxs[i] = max(maxs[i], v[i])
+
+        self.bounds_min = tuple(mins)
+        self.bounds_max = tuple(maxs)
+
+        if len(triangles) > 8:
+            self.split()
+    
+    def split(self):
+        sizes = [
+            self.bounds_max[i] - self.bounds_min[i]
+            for i in range(3)
+        ]
+        axis = sizes.index(max(sizes))
+
+        self.triangles.sort(
+            key=lambda t: (
+                t.vertex0[axis] +
+                t.vertex1[axis] +
+                t.vertex2[axis]
+            ) / 3
+        )
+
+        mid = len(self.triangles) // 2
+        self.left = BVHNode(self.triangles[:mid])
+        self.right = BVHNode(self.triangles[mid:])
+        self.triangles = None
+
 def load_mesh(filename, color, specular, reflective):
     mesh = trimesh.load(filename, force='mesh')
     mesh.vertices -= mesh.centroid
@@ -85,6 +126,7 @@ class Scene:
             #Triangle((3, -2.5, 4.75), (1, -2.5, 2.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
         ]
         self.triangles += load_mesh("chess_knight.glb", color=(0,148,251), specular=1000, reflective=0)
+        self.bvh = BVHNode(self.triangles)
         self.lights = [
             Light(type="ambient", intensity=0.1),
             Light(type="point", intensity=0.9, position=(0,5,-1)),
