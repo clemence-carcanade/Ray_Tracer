@@ -157,13 +157,23 @@ def TraceRay(O, D, t_min, t_max, depth, scene):
         if dot(N, V) < 0 : N = negate(N)
     else:
         raise ValueError("Unkown Object")
+    
+    obj_color = object.color
+    
+    if object.checkered:
+        size = 1.0 
+        
+        if (int(math.floor(P[0] / size)) + int(math.floor(P[2] / size))) % 2 != 0:
+            obj_color = (50, 50, 50)
+        else:
+            obj_color = (220, 220, 220)
 
     lighting = ComputeLighting(P, N, V, object.specular, t_max, scene)
 
     local_color = (
-        int(object.color[0] * lighting),
-        int(object.color[1] * lighting),
-        int(object.color[2] * lighting)
+        int(obj_color[0] * lighting),
+        int(obj_color[1] * lighting),
+        int(obj_color[2] * lighting)
     )
 
     r = object.reflective

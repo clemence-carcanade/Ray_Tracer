@@ -20,6 +20,7 @@ class Wall:
     color: Tuple[int, int, int]
     specular: int
     reflective: float
+    checkered: bool = False
 
 @dataclass
 class Triangle:
@@ -114,18 +115,22 @@ class Scene:
             #Sphere(center=(-2, -1.5, 4), radius=1, color=(0, 255, 0), specular=10, reflective = 0.4),  # Green
         ]
         self.walls = [
-            Wall(center=(0, -1, 0), normal=(0, 1, 0), width=3, height=3, color=(255, 255, 255), specular=1000, reflective=0), #Bottom White
-            Wall(center=(1.5, 0.5, 0), normal=(-1, 0, 0), width=3, height=3, color=(0, 255, 0), specular=500, reflective=0), #Right Green
-            Wall(center=(-1.5, 0.5, 0), normal=(1, 0, 0), width=3, height=3, color=(255, 0, 0), specular=500, reflective=0), #Left Red
-            Wall(center=(0, 0.5, 1.5), normal=(0, 0, -1), width=3, height=3, color=(255, 255, 255), specular=500, reflective=0), #Behind White
+            Wall(center=(0, -1.6, 3), normal=(0, 1, 0), width=8, height=8, 
+                color=(255, 255, 255), specular=1000, reflective=0.1, checkered=True),
         ]
+
+            #Wall(center=(-1.8, -1.6, 0), normal=(0, 1, 0), width=0.5, height=0.5, color=(255, 255, 255), specular=1000, reflective=0), #Bottom White
+            #Wall(center=(1.5, 0.5, 0), normal=(-1, 0, 0), width=3, height=3, color=(0, 255, 0), specular=500, reflective=0), #Right Green
+            #Wall(center=(-1.5, 0.5, 0), normal=(1, 0, 0), width=3, height=3, color=(255, 0, 0), specular=500, reflective=0), #Left Red
+            #Wall(center=(0, 0.5, 1.5), normal=(0, 0, -1), width=3, height=3, color=(255, 255, 255), specular=500, reflective=0), #Behind White
+
         self.triangles = [
             #Triangle((1, -2.5, 2.75), (-1, -2.5, 4.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
             #Triangle((-1, -2.5, 4.75), (1, -2.5, 6.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
             #Triangle((1, -2.5, 6.75), (3, -2.5, 4.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
             #Triangle((3, -2.5, 4.75), (1, -2.5, 2.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
         ]
-        self.triangles += load_mesh("chess_knight.glb", color=(0,148,251), specular=1000, reflective=0)
+        #self.triangles += load_mesh("chess_knight.glb", color=(0,148,251), specular=1000, reflective=0)
         self.bvh = BVHNode(self.triangles)
         self.lights = [
             Light(type="ambient", intensity=0.1),
