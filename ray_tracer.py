@@ -1,5 +1,6 @@
 import math, time
 from PIL import Image
+from multiprocessing import Pool, cpu_count
 
 from scene import Scene, Sphere, Wall, Triangle
 from config import *
@@ -215,23 +216,28 @@ def ReflectRay(V, N):
         multiply(N, 2 * dot(N, V)), V
     )
 
+def RenderRow(y):
+    scene = Scene()
+    O = scene.camera.position
+    row = []
+    for x in range(-CANVAS_WIDTH // 2, CANVAS_WIDTH // 2):
+        D = multiply_matrix_vector(scene.camera.rotation, CanvasToViewport(x, y))
+        color = TraceRay(O, D, 1, math.inf, 3, scene)
+        row.append(color)
+    return y, row
+
 def main():
     print("Start Ray Tracing...")
     start_time = time.time()
     image = Image.new("RGB", (CANVAS_WIDTH, CANVAS_HEIGHT))
     pixels = image.load()
 
-    scene = Scene()
-    O = scene.camera.position
-    recursion_depth = 3
-
-    for x in range(-CANVAS_WIDTH // 2, CANVAS_WIDTH // 2):
-        for y in range(-CANVAS_HEIGHT // 2, CANVAS_HEIGHT // 2):
-            D = multiply_matrix_vector(scene.camera.rotation, CanvasToViewport(x, y))
-            color = TraceRay(O, D, 1, math.inf, recursion_depth, scene)
-            px = x + CANVAS_WIDTH // 2
+    rows_y = list(range(-CANVAS_HEIGHT // 2, CANVAS_HEIGHT // 2))
+    with Pool(cpu_count()) as pool:
+        for y, row in pool.imap_unordered(RenderRow, rows_y):
             py = CANVAS_HEIGHT // 2 - y - 1
-            pixels[px, py] = color
+            for px, color in enumerate(row):
+                pixels[px, py] = color
 
     image.save("output/output.png")
     print("Completed Rendering : output.png")
