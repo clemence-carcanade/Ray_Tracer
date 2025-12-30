@@ -160,7 +160,7 @@ def TraceRay(O, D, t_min, t_max, depth, scene):
     
     obj_color = object.color
     
-    if object.checkered:
+    if hasattr(object, 'checkered') and object.checkered:
         size = 1.0 
         
         if (int(math.floor(P[0] / size)) + int(math.floor(P[2] / size))) % 2 != 0:
