@@ -88,15 +88,17 @@ class BVHNode:
         self.right = BVHNode(self.triangles[mid:])
         self.triangles = None
 
-def load_mesh(filename, color, specular, reflective):
+def load_mesh(filename, color, specular, reflective, position=(0, 0, 0), scale=1.0):
     mesh = trimesh.load(filename, force='mesh')
     mesh.vertices -= mesh.centroid
+    mesh.vertices *= scale
     rotation = np.array([
         [math.cos(-90), 0, math.sin(-90)],
         [0, 1, 0],
         [-math.sin(-90), 0, math.cos(-90)]
     ])
     mesh.vertices = mesh.vertices @ rotation
+    mesh.vertices += np.array(position)
     triangles = []
     for face in mesh.faces:
         vertex0 = tuple(mesh.vertices[face[0]])
@@ -113,6 +115,9 @@ class Scene:
             #Sphere(center=(0, -1, 3), radius=1, color=(255, 0, 0), specular=500, reflective = 0.2),   # Red
             #Sphere(center=(-0.5, -2, 2.5), radius=0.5, color=(0, 0, 255), specular=500, reflective = 0.3),   # Blue
             #Sphere(center=(-2, -1.5, 4), radius=1, color=(0, 255, 0), specular=10, reflective = 0.4),  # Green
+
+            Sphere(center=(3, 1.5, 4), radius=2, color=(255, 0, 0), specular=500, reflective = 0.7),
+            Sphere(center=(-1.5, 0, 0), radius=0.5, color=(112, 8, 191), specular=500, reflective = 0.3),
         ]
         self.walls = [
             Wall(center=(0, -1.6, 3), normal=(0, 1, 0), width=8, height=8, 
@@ -129,8 +134,13 @@ class Scene:
             #Triangle((-1, -2.5, 4.75), (1, -2.5, 6.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
             #Triangle((1, -2.5, 6.75), (3, -2.5, 4.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
             #Triangle((3, -2.5, 4.75), (1, -2.5, 2.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
+
+            Triangle((1.5, -2.5, -1), (-0.5, -2.5, 1), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
+            Triangle((-0.5, -2.5, 1), (1.5, -2.5, 3), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
+            Triangle((1.5, -2.5, 3), (3.5, -2.5, 1), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
+            Triangle((3.5, -2.5, 1), (1.5, -2.5, -1), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
         ]
-        #self.triangles += load_mesh("chess_knight.glb", color=(0,148,251), specular=1000, reflective=0)
+        self.triangles += load_mesh("chess_knight.glb", color=(255,255,255), specular=1000, reflective=0, position=(-2, -0.2, 3), scale=1.5)
         self.bvh = BVHNode(self.triangles)
         self.lights = [
             Light(type="ambient", intensity=0.1),
@@ -138,14 +148,22 @@ class Scene:
             #Light(type="directional", intensity=0.2, direction=(1,4,4))
         ]
         self.camera = Camera(
-                        position=(0,0.5,-4.5),
-                        rotation=(
-                            (1, 0, 0),
-                            (0, 1, 0),
-                            (0, 0, 1),
-                        ))
+            position=(5, 4, -6),
+            rotation=(
+                (math.cos(-0.5), 0, math.sin(-0.5)),
+                (0, math.cos(0.5), -math.sin(0.5)),
+                (-math.sin(-0.5), 0, math.cos(-0.5)),
+            ))
 
 """
+Camera(
+    position=(0,0.5,-4.5),
+    rotation=(
+        (1, 0, 0),
+        (0, 1, 0),
+        (0, 0, 1),
+    ))
+
 Camera(
     position=(4, 0, 1.5),
     rotation=(
