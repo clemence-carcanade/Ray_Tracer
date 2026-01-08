@@ -120,7 +120,7 @@ class Scene:
             Sphere(center=(-1.5, 0, 0), radius=0.5, color=(112, 8, 191), specular=500, reflective = 0.3),
         ]
         self.walls = [
-            Wall(center=(0, -1.6, 3), normal=(0, 1, 0), width=8, height=8, 
+            Wall(center=(0, -1.6, 3), normal=(0, 1, 0), width=100, height=100, 
                 color=(255, 255, 255), specular=1000, reflective=0.1, checkered=True),
         ]
 
