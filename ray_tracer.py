@@ -2,7 +2,7 @@ import math, time
 from PIL import Image
 from multiprocessing import Pool, cpu_count
 
-from scene import Scene, Sphere, Wall, Triangle
+from scene import Scene, Sphere, Wall, Triangle, Camera
 from config import *
 
 # Vector math operations
@@ -37,6 +37,18 @@ def cross(a, b):
         a[2]*b[0] - a[0]*b[2],
         a[0]*b[1] - a[1]*b[0]
     )
+
+def look_at(camera_pos, target, up=(0, 1, 0)):
+    forward = subtract(target, camera_pos)
+
+    forward = (forward[0], 0.0, forward[2])
+    forward = normalize(forward)
+
+    right = normalize(cross(forward, up))
+    true_up = cross(right, forward)
+
+    return (right, true_up, forward)
+
 
 # Implementation of pseudo-code
 def CanvasToViewport(x, y):
@@ -268,35 +280,78 @@ def intersect_bvh(node, O, D, t_min, t_max):
         return obj_l, t_l
     return obj_r, t_r
 
-def RenderRow(y):
-    scene = Scene()
-    O = scene.camera.position
+def RenderRow(args):
+    y, camera = args
+    scene = Scene(camera)
+    O = camera.position
     row = []
+
     for x in range(-CANVAS_WIDTH // 2, CANVAS_WIDTH // 2):
-        D = multiply_matrix_vector(scene.camera.rotation, CanvasToViewport(x, y))
-        color = TraceRay(O, D, 1, math.inf, 3, scene)
-        row.append(color)
+        D = multiply_matrix_vector(camera.rotation, CanvasToViewport(x, y))
+        row.append(TraceRay(O, D, 1, math.inf, 3, scene))
+
     return y, row
 
-def main():
-    print("Start Ray Tracing...")
-    start_time = time.time()
+
+def render_frame(frame_num, total_frames):
+    frame_time = frame_num / total_frames
+    print(f"Rendering frame {frame_num + 1}/{total_frames}...")
+
+    center = (0, 0, 3)
+    radius = 10
+    height = 2
+
+    angle = 2 * math.pi * frame_time
+
+    cam_pos = (
+        center[0] + radius * math.cos(angle),
+        height,
+        center[2] + radius * math.sin(angle)
+    )
+
+    cam_rot = look_at(cam_pos, center)
+    camera = Camera(position=cam_pos, rotation=cam_rot)
+
     image = Image.new("RGB", (CANVAS_WIDTH, CANVAS_HEIGHT))
     pixels = image.load()
 
-    rows_y = list(range(-CANVAS_HEIGHT // 2, CANVAS_HEIGHT // 2))
+    rows_y = range(-CANVAS_HEIGHT // 2, CANVAS_HEIGHT // 2)
+    args = [(y, camera) for y in rows_y]
+
     with Pool(cpu_count()) as pool:
-        for y, row in pool.imap_unordered(RenderRow, rows_y):
+        for y, row in pool.imap_unordered(RenderRow, args):
             py = CANVAS_HEIGHT // 2 - y - 1
             for px, color in enumerate(row):
                 pixels[px, py] = color
 
-    image.save("output/output.png")
-    print("Completed Rendering : output.png")
-    end_time = int(time.time()-start_time)
-    minutes = end_time//60
-    seconds = end_time%60
-    print(f"Render time: {minutes:02d}:{seconds:02d}")
+    return image
+
+
+def main():
+    print("Start Ray Tracing Animation...")
+    start_time = time.time()
+    
+    total_frames = 20 
+    frames = []
+    
+    for frame_num in range(total_frames):
+        frame = render_frame(frame_num, total_frames)
+        frames.append(frame)
+    
+    print("Saving GIF...")
+    frames[0].save(
+        "output/animation.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=100,
+        loop=0
+    )
+    
+    print("Completed Animation: output/animation.gif")
+    end_time = int(time.time() - start_time)
+    minutes = end_time // 60
+    seconds = end_time % 60
+    print(f"Total render time: {minutes:02d}:{seconds:02d}")
 
 if __name__ == "__main__":
     main()

@@ -110,7 +110,7 @@ def load_mesh(filename, color, specular, reflective, position=(0, 0, 0), scale=1
     return triangles
 
 class Scene:
-    def __init__(self):
+    def __init__(self, camera=None):
         self.spheres = [
             #Sphere(center=(0, -1, 3), radius=1, color=(255, 0, 0), specular=500, reflective = 0.2),   # Red
             #Sphere(center=(-0.5, -2, 2.5), radius=0.5, color=(0, 0, 255), specular=500, reflective = 0.3),   # Blue
@@ -147,15 +147,20 @@ class Scene:
             Light(type="point", intensity=0.9, position=(0,5,-1)),
             #Light(type="directional", intensity=0.2, direction=(1,4,4))
         ]
-        self.camera = Camera(
-            position=(5, 4, -6),
-            rotation=(
-                (math.cos(-0.5), 0, math.sin(-0.5)),
-                (0, math.cos(0.5), -math.sin(0.5)),
-                (-math.sin(-0.5), 0, math.cos(-0.5)),
-            ))
+        
+        self.camera = camera
+
+        
 
 """
+Camera(
+    position=(5, 4, -6),
+    rotation=(
+        (math.cos(-0.5), 0, math.sin(-0.5)),
+        (0, math.cos(0.5), -math.sin(0.5)),
+        (-math.sin(-0.5), 0, math.cos(-0.5)),
+    ))
+
 Camera(
     position=(0,0.5,-4.5),
     rotation=(
