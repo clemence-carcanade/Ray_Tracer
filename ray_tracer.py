@@ -37,6 +37,7 @@ def cross(a, b):
         a[2]*b[0] - a[0]*b[2],
         a[0]*b[1] - a[1]*b[0]
     )
+
 """Computes a camera rotation matrix so the camera at camera_pos looks at target.
 camera_pos: camera position
 target: point to look at
@@ -320,6 +321,8 @@ t_min: float minimum distance
 t_max: float maximum distance
 returns: (Triangle or None, t)"""
 def intersect_bvh(node, O, D, t_min, t_max):
+    if node is None:
+        return None, math.inf
     if not intersect_aabb(O, D, node.bounds_min, node.bounds_max):
         return None, math.inf
 
@@ -346,7 +349,7 @@ args: tuple (y, Camera)
 returns: (y, list of RGB colors)"""
 def RenderRow(args):
     y, camera = args
-    scene = Scene(camera)
+    scene = Scene("scene.txt", camera)
     O = camera.position
     row = []
 
@@ -399,7 +402,7 @@ def main():
     print("Start Ray Tracing Animation...")
     start_time = time.time()
     
-    total_frames = 20 
+    total_frames = 60 #60 fps
     frames = []
     
     for frame_num in range(total_frames):
@@ -408,14 +411,14 @@ def main():
     
     print("Saving GIF...")
     frames[0].save(
-        "output/animation.gif",
+        "output/animation-txt.gif",
         save_all=True,
         append_images=frames[1:],
         duration=100,
         loop=0
     )
     
-    print("Completed Animation: output/animation.gif")
+    print("Completed Animation: output/animation-txt.gif")
     end_time = int(time.time() - start_time)
     minutes = end_time // 60
     seconds = end_time % 60

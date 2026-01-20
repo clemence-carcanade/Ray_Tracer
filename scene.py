@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 import math, trimesh
 import numpy as np
+import re
 
 @dataclass
 class Sphere:
@@ -109,48 +110,115 @@ def load_mesh(filename, color, specular, reflective, position=(0, 0, 0), scale=1
         )
     return triangles
 
+def parse_tuple(s):
+    """Parse une chaîne comme '(1,2,3)' en tuple (1, 2, 3)"""
+    s = s.strip('()')
+    values = [float(x.strip()) for x in s.split(',')]
+    return tuple(values)
+
+def parse_tuple_of_tuples(s):
+    """Parse une chaîne comme '((1,0,0),(0,1,0),(0,0,1))' en tuple de tuples"""
+    # Enlever les parenthèses extérieures
+    s = s.strip('()')
+    # Trouver chaque tuple interne
+    tuples = re.findall(r'\([^)]+\)', s)
+    return tuple(parse_tuple(t) for t in tuples)
+
+def parse_line(line):
+    """Parse une ligne du fichier de scène"""
+    # Extraire le type d'objet
+    parts = line.split(maxsplit=1)
+    if len(parts) < 2:
+        return None
+    
+    obj_type = parts[0]
+    params_str = parts[1]
+    
+    # Parser les paramètres
+    params = {}
+    # Regex pour capturer key=value
+    pattern = r'(\w+)=((?:\([^)]*(?:\([^)]*\)[^)]*)*\)|[^,\s]+))'
+    matches = re.findall(pattern, params_str)
+    
+    for key, value in matches:
+        # Détecter le type de valeur
+        if value.startswith('(('):  # Tuple de tuples
+            params[key] = parse_tuple_of_tuples(value)
+        elif value.startswith('('):  # Tuple simple
+            tuple_val = parse_tuple(value)
+            # Convertir en int si c'est une couleur
+            if key == 'color':
+                params[key] = tuple(int(x) for x in tuple_val)
+            else:
+                params[key] = tuple_val
+        elif value.lower() in ('true', 'false'):  # Boolean
+            params[key] = value.lower() == 'true'
+        elif value.startswith('"') or value.startswith("'"):  # String
+            params[key] = value.strip('"\'')
+        elif '.' in value:  # Float
+            params[key] = float(value)
+        else:  # Int
+            params[key] = int(value)
+    
+    return obj_type, params
+
 class Scene:
-    def __init__(self, camera=None):
-        self.spheres = [
-            #Sphere(center=(0, -1, 3), radius=1, color=(255, 0, 0), specular=500, reflective = 0.2),   # Red
-            #Sphere(center=(-0.5, -2, 2.5), radius=0.5, color=(0, 0, 255), specular=500, reflective = 0.3),   # Blue
-            #Sphere(center=(-2, -1.5, 4), radius=1, color=(0, 255, 0), specular=10, reflective = 0.4),  # Green
-
-            Sphere(center=(3, 1.5, 4), radius=2, color=(255, 0, 0), specular=500, reflective = 0.7),
-            Sphere(center=(-1.5, 0, 0), radius=0.5, color=(112, 8, 191), specular=500, reflective = 0.3),
-        ]
-        self.walls = [
-            Wall(center=(0, -1.6, 3), normal=(0, 1, 0), width=100, height=100, 
-                color=(255, 255, 255), specular=1000, reflective=0.1, checkered=True),
-        ]
-
-            #Wall(center=(-1.8, -1.6, 0), normal=(0, 1, 0), width=0.5, height=0.5, color=(255, 255, 255), specular=1000, reflective=0), #Bottom White
-            #Wall(center=(1.5, 0.5, 0), normal=(-1, 0, 0), width=3, height=3, color=(0, 255, 0), specular=500, reflective=0), #Right Green
-            #Wall(center=(-1.5, 0.5, 0), normal=(1, 0, 0), width=3, height=3, color=(255, 0, 0), specular=500, reflective=0), #Left Red
-            #Wall(center=(0, 0.5, 1.5), normal=(0, 0, -1), width=3, height=3, color=(255, 255, 255), specular=500, reflective=0), #Behind White
-
-        self.triangles = [
-            #Triangle((1, -2.5, 2.75), (-1, -2.5, 4.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
-            #Triangle((-1, -2.5, 4.75), (1, -2.5, 6.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
-            #Triangle((1, -2.5, 6.75), (3, -2.5, 4.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
-            #Triangle((3, -2.5, 4.75), (1, -2.5, 2.75), (1, 0.5, 4.75), color=(255, 0, 0), specular=50, reflective=0.3),
-
-            Triangle((1.5, -2.5, -1), (-0.5, -2.5, 1), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
-            Triangle((-0.5, -2.5, 1), (1.5, -2.5, 3), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
-            Triangle((1.5, -2.5, 3), (3.5, -2.5, 1), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
-            Triangle((3.5, -2.5, 1), (1.5, -2.5, -1), (1.5, 0.5, 1), color=(0, 0, 255), specular=50, reflective=0.3),
-        ]
-        self.triangles += load_mesh("chess_knight.glb", color=(255,255,255), specular=1000, reflective=0, position=(-2, -0.2, 3), scale=1.5)
-        self.bvh = BVHNode(self.triangles)
-        self.lights = [
-            Light(type="ambient", intensity=0.1),
-            Light(type="point", intensity=0.9, position=(0,5,-1)),
-            #Light(type="directional", intensity=0.2, direction=(1,4,4))
-        ]
-        
+    def __init__(self, scene_file=None, camera=None):
+        self.spheres = []
+        self.walls = []
+        self.triangles = []
+        self.lights = []
         self.camera = camera
-
         
+        if scene_file:
+            self.load_from_file(scene_file)
+        
+        # Construire le BVH si des triangles existent
+        if self.triangles:
+            self.bvh = BVHNode(self.triangles)
+        else:
+            self.bvh = None
+    
+    def load_from_file(self, filename):
+        """Charge la scène depuis un fichier texte"""
+        with open(filename, 'r') as f:
+            for line in f:
+                line = line.strip()
+                # Ignorer les lignes vides et les commentaires
+                if not line or line.startswith('#'):
+                    continue
+                
+                result = parse_line(line)
+                if not result:
+                    continue
+                
+                obj_type, params = result
+                
+                if obj_type == 'CAMERA':
+                    self.camera = Camera(**params)
+                
+                elif obj_type == 'SPHERE':
+                    self.spheres.append(Sphere(**params))
+                
+                elif obj_type == 'WALL':
+                    self.walls.append(Wall(**params))
+                
+                elif obj_type == 'TRIANGLE':
+                    self.triangles.append(Triangle(**params))
+                
+                elif obj_type == 'MESH':
+                    mesh_triangles = load_mesh(
+                        filename=params['file'],
+                        color=params['color'],
+                        specular=params['specular'],
+                        reflective=params['reflective'],
+                        position=params.get('position', (0, 0, 0)),
+                        scale=params.get('scale', 1.0)
+                    )
+                    self.triangles.extend(mesh_triangles)
+                
+                elif obj_type == 'LIGHT':
+                    self.lights.append(Light(**params))  
 
 """
 Camera(
