@@ -37,7 +37,11 @@ def cross(a, b):
         a[2]*b[0] - a[0]*b[2],
         a[0]*b[1] - a[1]*b[0]
     )
-
+"""Computes a camera rotation matrix so the camera at camera_pos looks at target.
+camera_pos: camera position
+target: point to look at
+up: reference up vector (default Y)
+returns: 3x3 rotation matrix (right, true_up, forward)"""
 def look_at(camera_pos, target, up=(0, 1, 0)):
     forward = subtract(target, camera_pos)
 
@@ -49,8 +53,10 @@ def look_at(camera_pos, target, up=(0, 1, 0)):
 
     return (right, true_up, forward)
 
-
-# Implementation of pseudo-code
+"""Converts canvas pixel coordinates to a 3D direction on the viewport.
+x: int canvas x coordinate
+y: int canvas y coordinate
+returns: direction vector"""
 def CanvasToViewport(x, y):
     return (
         x * VIEWPORT_WIDTH / CANVAS_WIDTH,
@@ -58,6 +64,11 @@ def CanvasToViewport(x, y):
         PROJECTION_PLANE_D
     )
 
+"""Computes ray–sphere intersection using the quadratic equation.
+O: ray origin
+D: ray direction
+sphere: Sphere object
+returns: (t1, t2) intersection distances or (inf, inf) for no intersection"""
 def IntersectRaySphere(O, D, sphere):
     r = sphere.radius
     CO = subtract(O, sphere.center)
@@ -76,6 +87,11 @@ def IntersectRaySphere(O, D, sphere):
 
     return t1, t2
 
+"""Computes ray intersection with a bounded plane and checks rectangle limits.
+O: ray origin
+D: ray direction
+wall: Wall object
+returns: t distance or inf for no intersection"""
 def IntersectRayWall(O, D, wall):
     norm = dot(wall.normal, D)
     if abs(norm) < EPSILON:
@@ -101,6 +117,11 @@ def IntersectRayWall(O, D, wall):
     
     return t
 
+"""Computes ray–triangle intersection using the Möller–Trumbore algorithm.
+O: ray origin
+D: ray direction
+tri: Triangle object
+returns: t distance or inf for no intersection"""
 def IntersectRayTriangle(O, D, tri):
     edge1 = subtract(tri.vertex1, tri.vertex0)
     edge2 = subtract(tri.vertex2, tri.vertex0)
@@ -125,6 +146,14 @@ def IntersectRayTriangle(O, D, tri):
     t = f * dot(edge2, q)
     return t if t > EPSILON else math.inf
 
+"""Computes lighting at point P using ambient, diffuse and specular components.
+P: intersection point
+N: surface normal at P
+V: direction toward the camera
+s: int specular exponent
+t_max: float maximum shadow ray distance
+scene: Scene object
+returns: total light intensity (float)"""
 def ComputeLighting(P, N, V, s, t_max, scene):
     intensity = 0.0
 
@@ -153,6 +182,14 @@ def ComputeLighting(P, N, V, s, t_max, scene):
 
     return intensity
 
+"""Traces a ray recursively to compute the final pixel color.
+O: ray origin
+D: ray direction
+t_min: float minimum intersection distance
+t_max: float maximum intersection distance
+depth: int recursion depth limit
+scene: Scene object
+returns: RGB color tuple"""
 def TraceRay(O, D, t_min, t_max, depth, scene):
     object, t = ClosestIntersection(O, D, t_min, t_max, scene)
     if object is None:
@@ -204,6 +241,13 @@ def TraceRay(O, D, t_min, t_max, depth, scene):
 
     return final_color
 
+"""Finds the closest object intersected by the ray within bounds.
+O: ray origin
+D: ray direction
+t_min: float minimum distance
+t_max: float maximum distance
+scene: Scene object
+returns: closest (object, t)"""
 def ClosestIntersection(O, D, t_min, t_max, scene):
     closest_t = math.inf
     closest_object = None
@@ -232,11 +276,21 @@ def ClosestIntersection(O, D, t_min, t_max, scene):
 
     return closest_object, closest_t
 
+"""Computes the reflection direction of vector V around normal N.
+V: incident direction
+N: surface normal
+returns: reflected direction"""
 def ReflectRay(V, N):
     return subtract(
         multiply(N, 2 * dot(N, V)), V
     )
 
+"""Tests ray–AABB intersection using the slab method.
+O: ray origin
+D: ray direction
+bounds_min: AABB minimum corner
+bounds_max: AABB maximum corner
+returns: bool"""
 def intersect_aabb(O, D, bounds_min, bounds_max):
     tmin = -math.inf
     tmax = math.inf
@@ -258,6 +312,13 @@ def intersect_aabb(O, D, bounds_min, bounds_max):
 
     return True
 
+"""Traverses the BVH to find the closest triangle hit by the ray.
+node: BVH node
+O: ray origin
+D: ray direction
+t_min: float minimum distance
+t_max: float maximum distance
+returns: (Triangle or None, t)"""
 def intersect_bvh(node, O, D, t_min, t_max):
     if not intersect_aabb(O, D, node.bounds_min, node.bounds_max):
         return None, math.inf
@@ -280,6 +341,9 @@ def intersect_bvh(node, O, D, t_min, t_max):
         return obj_l, t_l
     return obj_r, t_r
 
+"""Renders a single image row by casting one ray per pixel.
+args: tuple (y, Camera)
+returns: (y, list of RGB colors)"""
 def RenderRow(args):
     y, camera = args
     scene = Scene(camera)
@@ -292,7 +356,10 @@ def RenderRow(args):
 
     return y, row
 
-
+"""Renders a single animation frame with an orbiting camera.
+frame_num: int current frame index
+total_frames: int total number of frames
+returns: PIL Image"""
 def render_frame(frame_num, total_frames):
     frame_time = frame_num / total_frames
     print(f"Rendering frame {frame_num + 1}/{total_frames}...")
@@ -326,7 +393,8 @@ def render_frame(frame_num, total_frames):
 
     return image
 
-
+"""Program entry point.
+renders the output"""
 def main():
     print("Start Ray Tracing Animation...")
     start_time = time.time()
