@@ -111,22 +111,17 @@ def load_mesh(filename, color, specular, reflective, position=(0, 0, 0), scale=1
     return triangles
 
 def parse_tuple(s):
-    """Parse une chaîne comme '(1,2,3)' en tuple (1, 2, 3)"""
     s = s.strip('()')
     values = [float(x.strip()) for x in s.split(',')]
     return tuple(values)
 
 def parse_tuple_of_tuples(s):
-    """Parse une chaîne comme '((1,0,0),(0,1,0),(0,0,1))' en tuple de tuples"""
-    # Enlever les parenthèses extérieures
     s = s.strip('()')
-    # Trouver chaque tuple interne
     tuples = re.findall(r'\([^)]+\)', s)
     return tuple(parse_tuple(t) for t in tuples)
 
 def parse_line(line):
     """Parse une ligne du fichier de scène"""
-    # Extraire le type d'objet
     parts = line.split(maxsplit=1)
     if len(parts) < 2:
         return None
@@ -134,30 +129,26 @@ def parse_line(line):
     obj_type = parts[0]
     params_str = parts[1]
     
-    # Parser les paramètres
     params = {}
-    # Regex pour capturer key=value
     pattern = r'(\w+)=((?:\([^)]*(?:\([^)]*\)[^)]*)*\)|[^,\s]+))'
     matches = re.findall(pattern, params_str)
     
     for key, value in matches:
-        # Détecter le type de valeur
-        if value.startswith('(('):  # Tuple de tuples
+        if value.startswith('(('):
             params[key] = parse_tuple_of_tuples(value)
-        elif value.startswith('('):  # Tuple simple
+        elif value.startswith('('):
             tuple_val = parse_tuple(value)
-            # Convertir en int si c'est une couleur
             if key == 'color':
                 params[key] = tuple(int(x) for x in tuple_val)
             else:
                 params[key] = tuple_val
-        elif value.lower() in ('true', 'false'):  # Boolean
+        elif value.lower() in ('true', 'false'):
             params[key] = value.lower() == 'true'
-        elif value.startswith('"') or value.startswith("'"):  # String
+        elif value.startswith('"') or value.startswith("'"):
             params[key] = value.strip('"\'')
-        elif '.' in value:  # Float
+        elif '.' in value:
             params[key] = float(value)
-        else:  # Int
+        else:
             params[key] = int(value)
     
     return obj_type, params
@@ -173,18 +164,15 @@ class Scene:
         if scene_file:
             self.load_from_file(scene_file)
         
-        # Construire le BVH si des triangles existent
         if self.triangles:
             self.bvh = BVHNode(self.triangles)
         else:
             self.bvh = None
     
     def load_from_file(self, filename):
-        """Charge la scène depuis un fichier texte"""
         with open(filename, 'r') as f:
             for line in f:
                 line = line.strip()
-                # Ignorer les lignes vides et les commentaires
                 if not line or line.startswith('#'):
                     continue
                 
@@ -195,7 +183,8 @@ class Scene:
                 obj_type, params = result
                 
                 if obj_type == 'CAMERA':
-                    self.camera = Camera(**params)
+                    if self.camera is None:
+                        self.camera = Camera(**params)
                 
                 elif obj_type == 'SPHERE':
                     self.spheres.append(Sphere(**params))

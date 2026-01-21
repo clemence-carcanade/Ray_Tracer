@@ -94,10 +94,10 @@ D: ray direction
 wall: Wall object
 returns: t distance or inf for no intersection"""
 def IntersectRayWall(O, D, wall):
-    norm = dot(wall.normal, D)
-    if abs(norm) < EPSILON:
+    ndotd = dot(wall.normal, D)
+    if abs(ndotd) < EPSILON:
         return math.inf
-    t = dot(subtract(wall.center, O), wall.normal) / norm
+    t = dot(subtract(wall.center, O), wall.normal) / ndotd
     if t < 0: return math.inf
     P = add(O, multiply(D, t))
     
@@ -126,7 +126,7 @@ returns: t distance or inf for no intersection"""
 def IntersectRayTriangle(O, D, tri):
     edge1 = subtract(tri.vertex1, tri.vertex0)
     edge2 = subtract(tri.vertex2, tri.vertex0)
-
+    #P = V0 + u·(V1-V0) + v·(V2-V0) où u ≥ 0, v ≥ 0, et u+v ≤ 1
     h = cross(D, edge2)
     a = dot(edge1, h)
 
@@ -296,7 +296,7 @@ def intersect_aabb(O, D, bounds_min, bounds_max):
     tmin = -math.inf
     tmax = math.inf
 
-    for i in range(3):
+    for i in range(3):  #x,y,z
         if abs(D[i]) < EPSILON:
             if O[i] < bounds_min[i] or O[i] > bounds_max[i]:
                 return False
@@ -411,14 +411,14 @@ def main():
     
     print("Saving GIF...")
     frames[0].save(
-        "output/animation-txt.gif",
+        "output/animation-test.gif",
         save_all=True,
         append_images=frames[1:],
         duration=100,
         loop=0
     )
     
-    print("Completed Animation: output/animation-txt.gif")
+    print("Completed Animation: output/animation-test.gif")
     end_time = int(time.time() - start_time)
     minutes = end_time // 60
     seconds = end_time % 60
