@@ -110,6 +110,8 @@ def load_mesh(filename, color, specular, reflective, position=(0, 0, 0), scale=1
         )
     return triangles
 
+"""Scene parsing made by Claude.ia"""
+
 def parse_tuple(s):
     s = s.strip('()')
     values = [float(x.strip()) for x in s.split(',')]

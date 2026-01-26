@@ -38,6 +38,8 @@ def cross(a, b):
         a[0]*b[1] - a[1]*b[0]
     )
 
+"""Loot At Function made by Claude.ia"""
+
 """Computes a camera rotation matrix so the camera at camera_pos looks at target.
 camera_pos: camera position
 target: point to look at
@@ -100,6 +102,8 @@ def IntersectRayWall(O, D, wall):
     t = dot(subtract(wall.center, O), wall.normal) / ndotd
     if t < 0: return math.inf
     P = add(O, multiply(D, t))
+
+    """Extension Plane to Wall assited with Claude.ia"""
     
     if abs(wall.normal[0]) < EPSILON and abs(wall.normal[1]) < EPSILON:
         tangent = (0, 1, 0)
@@ -285,6 +289,8 @@ def ReflectRay(V, N):
     return subtract(
         multiply(N, 2 * dot(N, V)), V
     )
+
+"""BVH Tree implementation assited with Claude.ia"""
 
 """Tests ray–AABB intersection using the slab method.
 O: ray origin
