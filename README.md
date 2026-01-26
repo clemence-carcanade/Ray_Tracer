@@ -77,6 +77,8 @@ The wall is a bounded rectangular plane defined by its width and height. A check
 
 Triangles are the basic primitives for representing complex 3D meshes. Three non-collinear vertices define a unique plane.
 
+The algorithm implemented inspires itself from this source : https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+
 ### Lights
 
 Three types of lights are implemented:
@@ -85,6 +87,8 @@ Three types of lights are implemented:
 - **directional**: Parallel rays (like the sun)
 
 ### BVH (Bounding Volume Hierarchy)
+
+The algorithm implemented inspires itself from this source : https://en.wikipedia.org/wiki/Bounding_volume_hierarchy
 
 Testing intersection with each triangle is costly O(n). The BVH organizes triangles hierarchically to reduce tests to O(log n).
 
